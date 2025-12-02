@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Button Test</title>
+<title>Simple Button Test</title>
 </head>
 <body>
-
-    <button id="btn">Click Me</button>
-    <h2 id="output"></h2>
-
-    <script>
-        document.getElementById("btn").onclick = async function() {
-            let res = await fetch("http://localhost:3000/hello");
-            let data = await res.text();
-            document.getElementById("output").innerText = data;
-        }
-    </script>
-
+<button id="btn">Click Me</button>
+<h2 id="output"></h2>
+<script>
+document.getElementById("btn").onclick = async function() {
+let res = await fetch("http://localhost:3000/hello");
+let data = await res.text();
+document.getElementById("output").innerText = data;
+}
+</script>
 </body>
 </html>
