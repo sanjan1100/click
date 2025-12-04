@@ -1,17 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simple Button Test</title>
+  <title>Hello + Admin Test With Status Codes</title>
 </head>
 <body>
-<button id="btn">Click Me</button>
-<h2 id="output"></h2>
+
+
+<button id="btnHello">Say Hello</button>
+<p id="helloOutput"></p>
+
+<hr>
+
+
+<button id="btnAdmin">Admin</button>
+<pre id="adminOutput"></pre>
+
 <script>
-document.getElementById("btn").onclick = async function() {
-let res = await fetch("http://localhost:3000/hello");
-let data = await res.text();
-document.getElementById("output").innerText = data;
-}
+document.getElementById("btnHello").onclick = async function () {
+    let res = await fetch("http://localhost:3000/hello");
+    let text = await res.text();
+    document.getElementById("helloOutput").innerText =
+        "Status: " + res.status + " → " + text;
+};
+
+document.getElementById("btnAdmin").onclick = async function () {
+    let res = await fetch("http://localhost:3000/admin", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-secret-key": "admin123"
+        },
+        body: JSON.stringify({
+            userId: 15,
+            name: "Sanjan",
+            role: "Admin"
+        })
+    });
+
+    let statusText = "Status: " + res.status + "\n";
+    let json = await res.json();
+
+    document.getElementById("adminOutput").innerText =
+        statusText + JSON.stringify(json, null, 2);
+};
 </script>
+
 </body>
 </html>
