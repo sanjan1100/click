@@ -17,6 +17,7 @@
 const helloOutput = document.getElementById("helloOutput");
 const adminOutput = document.getElementById("adminOutput");
 
+// HELLO route
 document.getElementById("btnHello").addEventListener("click", async () => {
     try {
         const res = await fetch("http://localhost:3000/hello");
@@ -27,6 +28,7 @@ document.getElementById("btnHello").addEventListener("click", async () => {
     }
 });
 
+// ADMIN route
 document.getElementById("btnAdmin").addEventListener("click", async () => {
     try {
         const res = await fetch("http://localhost:3000/admin", {
@@ -36,13 +38,22 @@ document.getElementById("btnAdmin").addEventListener("click", async () => {
                 "x-secret-key": "admin123"
             },
             body: JSON.stringify({
-                userId: 15,
-                name: "Sanjan",
+                userId: 19,
+                name: "nakshith",
                 role: "Admin"
             })
         });
 
         const data = await res.json();
+
+        
+        if (res.status === 409) {
+            adminOutput.innerText =
+                "Status: 409\n" +
+                "Message: User already exists";
+            return;
+        }
+
 
         if (res.ok && data.newUser) {
             adminOutput.innerText =

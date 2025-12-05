@@ -15,6 +15,7 @@ app.get("/hello", (req, res) => {
 app.post("/admin", (req, res) => {
     const secret = req.headers["x-secret-key"];
 
+    // Secret Key validation
     if (secret !== "admin123") {
         return res.status(401).json({
             status: 401,
@@ -22,6 +23,7 @@ app.post("/admin", (req, res) => {
         });
     }
 
+    // Body validation
     if (!req.body || !req.body.userId || !req.body.name) {
         return res.status(400).json({
             status: 400,
@@ -30,13 +32,27 @@ app.post("/admin", (req, res) => {
     }
 
     try {
+        // If file not exists, create it
         if (!fs.existsSync("users.json")) fs.writeFileSync("users.json", "[]");
 
         let users = JSON.parse(fs.readFileSync("users.json", "utf8"));
         if (!Array.isArray(users)) users = [];
 
-        users.push(req.body);
+        // ***** NEW FEATURE: CHECK IF USER ALREADY EXISTS *****
+        const isUserExist = users.some(
+            (u) => u.userId === req.body.userId
+        );
 
+        if (isUserExist) {
+            return res.status(409).json({
+                status: 409,
+                message: "User already exists"
+            });
+        }
+        // ********************************************************
+
+        // Save new user
+        users.push(req.body);
         fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
 
         return res.status(201).json({
