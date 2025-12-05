@@ -1,48 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Hello + Admin Test With Status Codes</title>
+  <title>Hello + Admin Test</title>
 </head>
 <body>
-
 
 <button id="btnHello">Say Hello</button>
 <p id="helloOutput"></p>
 
 <hr>
 
-
 <button id="btnAdmin">Admin</button>
 <pre id="adminOutput"></pre>
 
 <script>
-document.getElementById("btnHello").onclick = async function () {
-    let res = await fetch("http://localhost:3000/hello");
-    let text = await res.text();
-    document.getElementById("helloOutput").innerText =
-        "Status: " + res.status + " → " + text;
-};
+const helloOutput = document.getElementById("helloOutput");
+const adminOutput = document.getElementById("adminOutput");
 
-document.getElementById("btnAdmin").onclick = async function () {
-    let res = await fetch("http://localhost:3000/admin", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "x-secret-key": "admin123"
-        },
-        body: JSON.stringify({
-            userId: 15,
-            name: "Sanjan",
-            role: "Admin"
-        })
-    });
+document.getElementById("btnHello").addEventListener("click", async () => {
+    try {
+        const res = await fetch("http://localhost:3000/hello");
+        const text = await res.text();
+        helloOutput.innerText = "Status: " + res.status + " → " + text;
+    } catch (err) {
+        helloOutput.innerText = "Error: " + err.message;
+    }
+});
 
-    let statusText = "Status: " + res.status + "\n";
-    let json = await res.json();
+document.getElementById("btnAdmin").addEventListener("click", async () => {
+    try {
+        const res = await fetch("http://localhost:3000/admin", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "x-secret-key": "admin123"
+            },
+            body: JSON.stringify({
+                userId: 15,
+                name: "Sanjan",
+                role: "Admin"
+            })
+        });
 
-    document.getElementById("adminOutput").innerText =
-        statusText + JSON.stringify(json, null, 2);
-};
+        const data = await res.json();
+
+        if (res.ok && data.newUser) {
+            adminOutput.innerText =
+                "Status: " + res.status + "\n" +
+                "UserId: " + data.newUser.userId + "\n" +
+                "Name: " + data.newUser.name + "\n" +
+                "Role: " + data.newUser.role;
+        } else {
+            adminOutput.innerText =
+                "Status: " + res.status + "\nMessage: " + (data.message || "Unknown error");
+        }
+
+    } catch (err) {
+        adminOutput.innerText = "Fetch Error: " + err.message;
+    }
+});
 </script>
 
 </body>

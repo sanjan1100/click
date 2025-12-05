@@ -6,20 +6,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// -------------------------------
-// /hello  → 200 OK
-// -------------------------------
+// GET /hello
 app.get("/hello", (req, res) => {
     res.status(200).send("Hello");
 });
 
-// -------------------------------
-// /admin  → with status codes
-// -------------------------------
+// POST /admin
 app.post("/admin", (req, res) => {
     const secret = req.headers["x-secret-key"];
 
-    // 401 Unauthorized
     if (secret !== "admin123") {
         return res.status(401).json({
             status: 401,
@@ -27,40 +22,39 @@ app.post("/admin", (req, res) => {
         });
     }
 
-    // 400 Bad Request (body missing)
     if (!req.body || !req.body.userId || !req.body.name) {
         return res.status(400).json({
             status: 400,
-            message: "Bad Request: Required fields missing"
+            message: "Bad Request: Missing userId or name"
         });
     }
 
     try {
-        let users = JSON.parse(fs.readFileSync("users.json", "utf8"));
+        if (!fs.existsSync("users.json")) fs.writeFileSync("users.json", "[]");
 
-        // Add new user
+        let users = JSON.parse(fs.readFileSync("users.json", "utf8"));
+        if (!Array.isArray(users)) users = [];
+
         users.push(req.body);
 
         fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
 
-        // 201 Created
-        res.status(201).json({
+        return res.status(201).json({
             status: 201,
             message: "User created successfully",
             newUser: req.body
         });
+
     } catch (err) {
-        // 500 Internal Server Error
-        res.status(500).json({
+        console.log("SERVER ERROR:", err.message);
+        return res.status(500).json({
             status: 500,
             message: "Server error while saving user"
         });
     }
 });
 
-// ------------------------------------
-// 404 Not Found (fallback route)
-// ------------------------------------
+// 404
 app.use((req, res) => {
     res.status(404).json({
         status: 404,
