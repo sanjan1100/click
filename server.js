@@ -1,21 +1,26 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
+const mongoose = require("mongoose");
+const User = require("./models/User"); 
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// GET /hello
+mongoose.connect("mongodb://127.0.0.1:27017/userdb")
+    .then(() => console.log("MongoDB connected"))
+    .catch((err) => console.log("MongoDB error:", err.message));
+
+
 app.get("/hello", (req, res) => {
     res.status(200).send("Hello");
 });
 
-// POST /admin
-app.post("/admin", (req, res) => {
+
+app.post("/admin", async (req, res) => {
     const secret = req.headers["x-secret-key"];
 
-    // Secret Key validation
+   
     if (secret !== "admin123") {
         return res.status(401).json({
             status: 401,
@@ -23,7 +28,7 @@ app.post("/admin", (req, res) => {
         });
     }
 
-    // Body validation
+ 
     if (!req.body || !req.body.userId || !req.body.name) {
         return res.status(400).json({
             status: 400,
@@ -32,33 +37,29 @@ app.post("/admin", (req, res) => {
     }
 
     try {
-        // If file not exists, create it
-        if (!fs.existsSync("users.json")) fs.writeFileSync("users.json", "[]");
+        
+        const isExist = await User.findOne({ userId: req.body.userId });
 
-        let users = JSON.parse(fs.readFileSync("users.json", "utf8"));
-        if (!Array.isArray(users)) users = [];
-
-        // ***** NEW FEATURE: CHECK IF USER ALREADY EXISTS *****
-        const isUserExist = users.some(
-            (u) => u.userId === req.body.userId
-        );
-
-        if (isUserExist) {
+        if (isExist) {
             return res.status(409).json({
                 status: 409,
                 message: "User already exists"
             });
         }
-        // ********************************************************
 
-        // Save new user
-        users.push(req.body);
-        fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
+     
+        const newUser = new User({
+            userId: req.body.userId,
+            name: req.body.name,
+            role: req.body.role
+        });
+
+        await newUser.save();
 
         return res.status(201).json({
             status: 201,
             message: "User created successfully",
-            newUser: req.body
+            newUser
         });
 
     } catch (err) {
@@ -70,13 +71,14 @@ app.post("/admin", (req, res) => {
     }
 });
 
-// 404
+
 app.use((req, res) => {
     res.status(404).json({
         status: 404,
         message: "Route not found"
     });
 });
+
 
 app.listen(3000, () => {
     console.log("Server running at http://localhost:3000");
