@@ -7,21 +7,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔗 CONNECT TO MONGODB ATLAS
+
 mongoose.connect("mongodb+srv://sanjanpoojary36_db_user:KeuKH9dNld8F1vm4@cluster0.e7v3lij.mongodb.net/userdb?retryWrites=true&w=majority")
     .then(() => console.log("MongoDB connected successfully"))
     .catch((err) => console.log("MongoDB connection error:", err.message));
 
-// ✔ SIMPLE TEST ROUTE
+
 app.get("/hello", (req, res) => {
     res.status(200).send("Hello");
 });
 
-// ✔ ADMIN CREATE USER ROUTE
 app.post("/admin", async (req, res) => {
     const secret = req.headers["x-secret-key"];
 
-    // SECRET KEY CHECK
     if (secret !== "admin123") {
         return res.status(401).json({
             status: 401,
@@ -29,7 +27,7 @@ app.post("/admin", async (req, res) => {
         });
     }
 
-    // VALIDATION
+ 
     if (!req.body || !req.body.userId || !req.body.name) {
         return res.status(400).json({
             status: 400,
@@ -38,7 +36,7 @@ app.post("/admin", async (req, res) => {
     }
 
     try {
-        // CHECK IF USER EXISTS IN MONGODB
+        
         const existingUser = await User.findOne({ userId: req.body.userId });
 
         if (existingUser) {
@@ -48,7 +46,7 @@ app.post("/admin", async (req, res) => {
             });
         }
 
-        // CREATE NEW USER DOCUMENT
+      
         const newUser = new User({
             userId: req.body.userId,
             name: req.body.name,
@@ -72,7 +70,6 @@ app.post("/admin", async (req, res) => {
     }
 });
 
-// 404 ROUTE
 app.use((req, res) => {
     res.status(404).json({
         status: 404,
@@ -80,7 +77,6 @@ app.use((req, res) => {
     });
 });
 
-// START SERVER
 app.listen(3000, () => {
     console.log("Server running at http://localhost:3000");
 });
