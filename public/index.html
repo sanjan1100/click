@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #userList {
+      margin-top: 30px;
+    }
+    .user-item {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+    .success {
+      color: green;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Management</h1>
+
+  <form id="userForm">
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" required>
+    </div>
+    <button type="submit">Add User</button>
+  </form>
+
+  <div id="message"></div>
+
+  <div id="userList">
+    <h2>Users</h2>
+    <div id="usersContainer"></div>
+  </div>
+
+  <script>
+    const userForm = document.getElementById('userForm');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const messageDiv = document.getElementById('message');
+    const usersContainer = document.getElementById('usersContainer');
+
+    // Function to display messages
+    function showMessage(message, type = 'error') {
+      messageDiv.innerHTML = `<p class="${type}">${message}</p>`;
+      setTimeout(() => {
+        messageDiv.innerHTML = '';
+      }, 5000);
+    }
+
+    // Function to fetch and display users
+    async function fetchUsers() {
+      try {
+        const response = await fetch('/users');
+        if (!response.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const users = await response.json();
+        displayUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        showMessage('Failed to load users');
+      }
+    }
+
+    // Function to display users
+    function displayUsers(users) {
+      usersContainer.innerHTML = '';
+      if (users.length === 0) {
+        usersContainer.innerHTML = '<p>No users found.</p>';
+        return;
+      }
+      users.forEach(user => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'user-item';
+        userDiv.innerHTML = `
+          <strong>${user.name}</strong><br>
+          Email: ${user.email}<br>
+          ID: ${user.id}
+        `;
+        usersContainer.appendChild(userDiv);
+      });
+    }
+
+    // Handle form submission
+    userForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+
+      if (!name || !email) {
+        showMessage('Please fill in all fields');
+        return;
+      }
+
+      try {
+        const response = await fetch('/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name, email }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showMessage('User added successfully!', 'success');
+          nameInput.value = '';
+          emailInput.value = '';
+          fetchUsers(); // Refresh the user list
+        } else {
+          showMessage(result.error || 'Failed to add user');
+        }
+      } catch (error) {
+        console.error('Error adding user:', error);
+        showMessage('Failed to add user');
+      }
+    });
+
+    // Load users when page loads
+    fetchUsers();
+  </script>
+</body>
+</html>

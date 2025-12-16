@@ -1,82 +1,62 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const User = require("./models/User"); 
+const express = require('express');
+const cors = require('cors');
+const pool = require('./db'); // Import the database pool
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the 'public' directory
+app.use(express.static('public'));
 
-mongoose.connect("mongodb+srv://sanjanpoojary36_db_user:KeuKH9dNld8F1vm4@cluster0.e7v3lij.mongodb.net/userdb?retryWrites=true&w=majority")
-    .then(() => console.log("MongoDB connected successfully"))
-    .catch((err) => console.log("MongoDB connection error:", err.message));
+// Handle favicon request to prevent 404
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-
-app.get("/hello", (req, res) => {
-    res.status(200).send("Hello");
+// GET /users - Fetch all users
+app.get('/users', async (req, res) => {
+  console.log('Fetching users...');
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    console.log('Users fetched:', result.rows.length);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching users:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
-app.post("/admin", async (req, res) => {
-    const secret = req.headers["x-secret-key"];
+// POST /users - Insert a new user
+app.post('/users', async (req, res) => {
+  const { name, email } = req.body;
 
-    if (secret !== "admin123") {
-        return res.status(401).json({
-            status: 401,
-            message: "Unauthorized: Wrong secret key"
-        });
+  // Basic validation
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO users (name, email) VALUES ($1, $2) RETURNING *',
+      [name, email]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error inserting user:', err);
+    if (err.code === '23505') { // Unique violation
+      res.status(409).json({ error: 'User with this email already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
     }
-
- 
-    if (!req.body || !req.body.userId || !req.body.name) {
-        return res.status(400).json({
-            status: 400,
-            message: "Bad Request: Missing userId or name"
-        });
-    }
-
-    try {
-        
-        const existingUser = await User.findOne({ userId: req.body.userId });
-
-        if (existingUser) {
-            return res.status(409).json({
-                status: 409,
-                message: "User already exists"
-            });
-        }
-
-      
-        const newUser = new User({
-            userId: req.body.userId,
-            name: req.body.name,
-            role: req.body.role || "user"
-        });
-
-        await newUser.save();  // SAVE TO MONGODB
-
-        return res.status(201).json({
-            status: 201,
-            message: "User created successfully",
-            data: newUser
-        });
-
-    } catch (err) {
-        console.log("SERVER ERROR:", err.message);
-        return res.status(500).json({
-            status: 500,
-            message: "Server error while saving user"
-        });
-    }
+  }
 });
 
+// 404 handler
 app.use((req, res) => {
-    res.status(404).json({
-        status: 404,
-        message: "Route not found"
-    });
+  res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(3000, () => {
-    console.log("Server running at http://localhost:3000");
+// Start the server
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
